@@ -10,6 +10,7 @@
             <p>Project Name: {{ name }}</p>
             <p>Student Name: ({{ netid }})</p>
         </div>
+
         <form class="form-inline global-search">
             <div class="header">
                 <h1 style="font-size: 55px; font-family:Futura; color: black">
@@ -20,19 +21,35 @@
             <br><br>
             
             <div class="form-group">
-                <input id="input" type="text" name="search_restaurant" class="form-control" placeholder="Your favourite restaurant">
-                <!--CITATION: CinemaPop auto-complete: https://github.com/erikjchan/cs4300sp2018-cinemapop/blob/master/app/templates/search.html-->
-                <script>
-                    let movies = 
-                </script>
+                <input id="restaurant" type="text" name="search_restaurant" class="form-control" placeholder="Your favourite restaurant">
             </div>
-
+            
             <div class="form-group">
-                <input id="input" type="text" name="search_city" class="form-control" placeholder="Your target city">
+                <input id="city" type="text" name="search_city" class="form-control" placeholder="Your target city">
             </div>
             
             <button type="submit" class="btn btn-info"> Go! </button>
         </form>
+
+        <!--CITATION: CinemaPop auto-complete: https://github.com/erikjchan/cs4300sp2018-cinemapop/blob/master/app/templates/search.html-->
+        <!--CITATION: typeahead.js examples: http://twitter.github.io/typeahead.js/examples/-->
+        <script>
+            let restaurantNames = new Bloodhound({
+              datumTokenizer: Bloodhound.tokenizers.whitespace,
+              queryTokenizer: Bloodhound.tokenizers.whitespace,
+              prefetch: {
+                url: 'static/all_splits/restaurant_prefetch.json'
+              },
+              remote: {
+                url: 'static/all_splits/restaurant_names.json'
+              }
+            });
+            $('#restaurant').typeahead(null, {
+                name: 'restaurant-names',
+                source: restaurantNames
+            });
+        </script>
+
         <form class="form-inline global-search">
         {% if data %}
             <h1>{{output_message}}</h1>

@@ -44,5 +44,7 @@ with open(file_name) as json_file:
         json.dump(name_by_id, outfile)
     with open('all_splits/restaurant_names.json', 'w') as outfile:
         json.dump(names_list, outfile)
+    with open('all_splits/restaurant_prefetch.json', 'w') as outfile:
+        json.dump(names_list[:500], outfile) #Prefetch restaurant names are a sample of restaurant names loaded on startup
 print("errs: %d" % errs)
 print("good: %d" % good)
