@@ -15,7 +15,9 @@ def search():
 		output_message = ''
 	else:
 		output_message = "Restaurants most similar to " + query_name + " in " + query_city
-		data = basicSearch(query_name, query_city)
+		city_without_state = query_city.split(', ')[0]
+		print(city_without_state)
+		data = basicSearch(query_name, city_without_state)
 	return render_template('search.html', name=project_name, netid=net_id, output_message=output_message, data=data)
 
 
