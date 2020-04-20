@@ -51,7 +51,7 @@ with open(file_name) as json_file:
     with open('all_splits/restaurant_names.json', 'w') as outfile:
         json.dump(names_list, outfile)
     with open('all_splits/restaurant_prefetch.json', 'w') as outfile:
-        json.dump(names_list[:500], outfile) #Prefetch restaurant names are a sample of restaurant names loaded, depends on limits of web browser storage
+        json.dump(names_list[:3200], outfile) #Prefetch restaurant names are a sample of restaurant names loaded, depends on limits of web browser storage
     with open('all_splits/cities.json', 'w') as outfile:
         json.dump(cities_list, outfile)
 print("errs: %d" % errs)
