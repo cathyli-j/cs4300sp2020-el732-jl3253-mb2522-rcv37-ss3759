@@ -1,44 +1,48 @@
 import json
 import sys
-file_name = "../all_restaurants.json"
+file_name = "all_restaurants.json"
 
 with open(file_name) as json_file:
     data = json.load(json_file)
-    cities = {}
-    names = {}
-    categories = {}
-    ids = {}
+    id_by_city = {}
+    id_by_name = {}
+    category_by_id = {}
+    name_by_id = {}
+    names_list = []
     errs = 0
     good = 0
     for d in data:
         try:
-            if d['name'].lower() in names:
-                names[d['name'].lower()].append(d['business_id'])
+            if d['name'].lower() in id_by_name:
+                id_by_name[d['name'].lower()].append(d['business_id'])
             else:
-                names[d['name'].lower()] = [d['business_id']]
+                id_by_name[d['name'].lower()] = [d['business_id']]
+                names_list.append(d['name'.lower()])
 
-            if d['city'].lower() in cities:
-                cities[d['city'].lower()].append(d['business_id'])
+            if d['city'].lower() in id_by_city:
+                id_by_city[d['city'].lower()].append(d['business_id'])
             else:
-                cities[d['city'].lower()] = [d['business_id']]
+                id_by_city[d['city'].lower()] = [d['business_id']]
 
-            categories[d['business_id']] = d['categories'].lower().split(", ")
+            category_by_id[d['business_id']] = d['categories'].lower().split(", ")
 
-            if d['business_id'].lower() in ids:
-                ids[d['business_id']].append(d['name'])
+            if d['business_id'].lower() in name_by_id:
+                name_by_id[d['business_id']].append(d['name'])
             else:
-                ids[d['business_id']] = [d['name']]
+                name_by_id[d['business_id']] = [d['name']]
             good += 1
         except:
             #print("err with %s" % d)
             errs += 1
     with open('all_splits/id_by_name.json', 'w') as outfile:
-        json.dump(names, outfile)
+        json.dump(id_by_name, outfile)
     with open('all_splits/id_by_city.json', 'w') as outfile:
-        json.dump(cities, outfile)
+        json.dump(id_by_city, outfile)
     with open('all_splits/cat_by_id.json', 'w') as outfile:
-        json.dump(categories, outfile)
+        json.dump(category_by_id, outfile)
     with open('all_splits/name_by_id.json', 'w') as outfile:
-        json.dump(ids, outfile)
+        json.dump(name_by_id, outfile)
+    with open('all_splits/restaurant_names.json', 'w') as outfile:
+        json.dump(names_list, outfile)
 print("errs: %d" % errs)
 print("good: %d" % good)

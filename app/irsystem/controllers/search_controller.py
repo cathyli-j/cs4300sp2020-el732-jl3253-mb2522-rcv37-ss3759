@@ -11,7 +11,7 @@ def search():
 	query_city = request.args.get('search_city')
 
 	if not query_name or not query_city:
-		data = []
+		data = [] # Since data is blank, search.html doesn't render any message/data
 		output_message = ''
 	else:
 		output_message = "Restaurants most similar to " + query_name + " in " + query_city
