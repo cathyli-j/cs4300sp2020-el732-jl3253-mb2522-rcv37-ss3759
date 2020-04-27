@@ -1,6 +1,7 @@
 from . import *  
 from app.irsystem.models.helpers import *
 from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 project_name = "Better Yelp Recommendations"
 net_id = "Emanuele Lusso: el732, Cathy Li: jl3253, Matias Blake: mb2522, Robert Villaluz: rcv37, Saaqeb Siddiqi: ss3759"
@@ -16,9 +17,40 @@ def search():
 	else:
 		output_message = "Restaurants most similar to " + query_name + " in " + query_city
 		city_without_state = query_city.split(', ')[0]
-		print(city_without_state)
 		data = basicSearch(query_name, city_without_state)
+		fullSearch(query_name, city_without_state) #TODO: until this is ready, leaving it as a background task, use print() while the local app is running to see its output in the console
 	return render_template('search.html', name=project_name, netid=net_id, output_message=output_message, data=data)
+
+"""
+CITATION: Assignment 5
+Returns a TfidfVectorizer object with the below preprocessing properties.
+
+Note: This function may log a deprecation warning. This is normal, and you
+can simply ignore it.
+
+Params: {max_features: Integer,
+					max_df: Float,
+					min_df: Float,
+					norm: String,
+					stop_words: String}
+Returns: TfidfVectorizer
+"""
+def create_vectorizer(max_features, stop_words, max_df=0.8, min_df=10, norm='l2'):
+	return TfidfVectorizer(min_df=min_df,max_df=max_df,max_features=max_features,stop_words=stop_words,norm=norm)
+
+"""
+Returns top 5 restaurants in the query city ranked by number of matching categories
+and cosine similarities between reviews.
+"""
+def fullSearch(name, city):
+	n_feats = 5000
+
+	with open('app/static/all_splits/flat_reviews.json') as json_file:
+		flat_reviews = json.load(json_file)
+
+	tfidf_vec = create_vectorizer(n_feats, "english")
+	doc_by_vocab = tfidf_vec.fit_transform([flat_reviews[b_id] for b_id in flat_reviews]).toarray()		
+	print(doc_by_vocab)
 
 
 """
