@@ -14,7 +14,7 @@ def search():
 		data = [] # Since data is blank, search.html doesn't render any message/data
 		output_message = ''
 	else:
-		output_message = "This is a test " + query_name + " in " + query_city
+		output_message = "Restaurants most similar to " + query_name + " in " + query_city
 		city_without_state = query_city.split(', ')[0]
 		print(city_without_state)
 		data = basicSearch(query_name, city_without_state)
