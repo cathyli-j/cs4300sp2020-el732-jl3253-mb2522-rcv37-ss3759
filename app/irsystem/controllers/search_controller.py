@@ -19,6 +19,8 @@ with open('app/static/all_splits/flat_reviews.json') as json_file:
 		flat_reviews = json.load(json_file)
 with open('app/static/all_splits/city_reviews_4.json') as json_file:
 		city_reviews = json.load(json_file)
+with open('app/static/all_splits/address_by_id.json') as json_file:
+	address_by_id = json.load(json_file)
 
 @irsystem.route('', methods=['GET'])
 def search():
@@ -152,9 +154,10 @@ Displays top results from IDs
 """
 def return_results(top):
 	data = {}
+	i = 0
 	for (id, score) in top.items():
 		if id in name_by_id: 
-			data[name_by_id[id][0]] = score
+			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':score, 'img':get_preview.get_img_src(id)}
 	return data
 
 

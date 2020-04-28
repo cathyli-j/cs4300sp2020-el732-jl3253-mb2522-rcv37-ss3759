@@ -19,8 +19,7 @@ def get_data_for_preview(bid):
     return BeautifulSoup(html, 'html.parser')
 
 def get_img_src(bid):
-    #this is very slow so it returns nothing for now
-    return ""
+    #this is very slow need to fix
     response = urllib.request.urlopen('https://www.yelp.com/biz/' + bid)
     html = str(response.read())
     soup = BeautifulSoup(html, 'html.parser')
