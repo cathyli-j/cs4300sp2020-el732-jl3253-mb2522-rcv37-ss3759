@@ -1,4 +1,5 @@
 from . import *  
+from app.irsystem.controllers import get_preview
 from app.irsystem.models.helpers import *
 from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -66,6 +67,8 @@ def basicSearch(name, city):
 		id_by_city = json.load(json_file)
 	with open('app/static/all_splits/name_by_id.json') as json_file:
 		name_by_id = json.load(json_file)
+	with open('app/static/all_splits/address_by_id.json') as json_file:
+		address_by_id = json.load(json_file)
 
 	query_id = id_by_name[name.lower()][0]
 	query_categories = cat_by_id[query_id]
@@ -79,10 +82,16 @@ def basicSearch(name, city):
 	for (id, categories) in target_city_restaurants.items():
 		target_city_restaurants_scores[id] = len(set(categories).intersection(query_categories))
 
+
+	
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1], reverse=True)
 	top_5 = dict(list(target_city_restaurants_scores)[0:5]) 
+
+	print("top 5 scores: ", top_5)
+
 	data = {}
 	for (id, score) in top_5.items():
-		data[name_by_id[id][0]] = score
+		data[id] = {'name': name_by_id[id][0].strip(), 'address':address_by_id[id], 'score':score, 'img':get_preview.get_img_src(id)}
+		# data[name_by_id[id][0]] = score
 	print(data)
 	return data
