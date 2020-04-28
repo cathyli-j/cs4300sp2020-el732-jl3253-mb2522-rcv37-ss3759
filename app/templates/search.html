@@ -5,6 +5,28 @@
         <script src="https://code.jquery.com/jquery-3.5.0.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="static/typeahead.bundle.js"></script>
         <link rel="stylesheet" href="/static/custom_search.css">
+
+        <style>
+
+            .preview img {
+                width: 100px;
+                height: 100px;
+                vertical-align: top;
+                margin-right: 20px;
+            }
+
+            .preview{
+                margin-left: 100px;
+                margin-right: 100px;
+                margin-top: 20px;
+                margin-bottom: 20px;
+                background-color: #f6f6f6;
+                padding: 30px;
+            }
+
+     
+        </style>
+
     </head>
     <body>
         <div class="topcorner">
@@ -75,14 +97,30 @@
             );
         </script>
 
-        <form class="form-inline global-search">
+        <form class="">
+
         {% if data %}
-            <h1>{{output_message}}</h1>
+            <h1 style="text-align: center;">{{output_message}}</h1>
             {% for d in data %}  
-                <br>
-                <p><h2>{{d}}</h2></p>
+            <a href='href="https://www.yelp.com/biz/{{d}}"' style="text-decoration: none;color: inherit;">
+                <div class="preview">
+                    <div style="min-height: 110px;">
+                        <img src="{{ data[d]['img'] }}" alt="" align='left'>
+                        <span style="font-weight: bold;color:#4d4d4d;">{{ data[d]['name'].strip() }}</span>
+                        <br>
+                        <span style="color: #b0b0b0;">{{data[d]['address']}}</span>
+                        <span>{{data[d]['rating']}}</span>
+                    </div>
+                    
+                    
+
+                    <span style="font-style: italic;">Score: {{data[d]['score']}}</span>
+                </div>
+            </a>
+                
             {% endfor %}
         {% endif %}
+
         </form>
     </body>
 
