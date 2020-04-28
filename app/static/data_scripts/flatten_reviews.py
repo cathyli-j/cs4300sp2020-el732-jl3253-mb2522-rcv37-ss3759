@@ -19,7 +19,7 @@ with open(file_name) as json_file:
         except:
             #print("err with %s" % r)
             errs += 1
-    with open('all_splits/flat_reviews.json', 'w') as outfile:
+    with open('../all_splits/flat_reviews.json', 'w') as outfile:
         json.dump(flat_reviews, outfile)
 print("errs: %d" % errs)
 print("good: %d" % good)
