@@ -1,6 +1,7 @@
 import json
 import sys
-file_name = "3000reviews.json" # TODO: We need to change this to the full scope of reviews we're interested in
+# TODO: We need to change this to the full scope of reviews we're interested in
+file_name = "../all_splits/reviews.json"
 
 with open(file_name) as json_file:
     data = json.load(json_file)
@@ -8,7 +9,7 @@ with open(file_name) as json_file:
     errs = 0
     good = 0
     print("Flattening reviews")
-    for r in data['reviews']:
+    for r in data:
         try:
             if r['business_id'] in flat_reviews:
                 flat_reviews[r['business_id']] += ' ' + r['text'].lower()
