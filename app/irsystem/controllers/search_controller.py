@@ -16,6 +16,8 @@ with open('app/static/all_splits/name_by_id.json') as json_file:
 		name_by_id = json.load(json_file)
 with open('app/static/all_splits/flat_reviews.json') as json_file:
 		flat_reviews = json.load(json_file)
+with open('app/static/all_splits/city_reviews_4.json') as json_file:
+		city_reviews = json.load(json_file)
 
 @irsystem.route('', methods=['GET'])
 def search():
@@ -28,8 +30,8 @@ def search():
 	else:
 		output_message = "Restaurants most similar to " + query_name + " in " + query_city
 		city_without_state = query_city.split(', ')[0]
-		data = basicSearch(query_name, city_without_state)
-		fullSearch(query_name, city_without_state) #TODO: until this is ready, leaving it as a background task, use print() while the local app is running to see its output in the console
+		#data = basicSearch(query_name, city_without_state)
+		data = fullSearch(query_name, city_without_state) #TODO: until this is ready, leaving it as a background task, use print() while the local app is running to see its output in the console
 	return render_template('search.html', name=project_name, netid=net_id, output_message=output_message, data=data)
 
 """
@@ -60,28 +62,48 @@ def fullSearch(name, city):
 	# flat_reviews will contain the flattened reviews for all restaurants in a city
 	##### Need to append query restaurant's reviews to the end of city reviews when the reviews data is done
 
-	query_reviews = flat_reviews[query_id]
-	del flat_reviews[query_id]
+	flat_reviews = city_reviews[city.lower()]
+
+	#City needs to be hard-coded for now until we migrate to database/split the reviews another way 
+	query_reviews = city_reviews['middleton'][query_id] #Freska Mediterranean Grill in Champaign
+
+	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now so we can't use examples that are from the same city
+	#query_reviews = flat_reviews[query_id]
+	#if query_id in flat_reviews: 
+	#	del flat_reviews[query_id]
+
 	flat_reviews[query_id] = query_reviews
 	doc_by_vocab = tfidf_vec.fit_transform([flat_reviews[b_id] for b_id in flat_reviews]).toarray()
 
 	#Restaurants that are in the flat_reviews dataset: Sake Rok, Nadège Patisserie
 
-	restaurant_id_to_index = TEST_generate_restaurant_id_to_index() #Use this as opposed to the next line until we have reviews split by city
-	# restaurant_id_to_index = generate_restaurant_id_to_index(city.lower())
+	#restaurant_id_to_index = TEST_generate_restaurant_id_to_index() #Use this as opposed to the next line until we have reviews split by city
+	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower())
 
-	restaurant_id_to_index[query_id] = len(restaurant_id_to_index) - 1 # Appends the query restaurant to the city 
+	restaurant_id_to_index[query_id] = len(restaurant_id_to_index) # Appends the query restaurant to the city
 	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()}
 	n_restaurants = len(restaurant_id_to_index)
-
 	sim_list = get_sim_list(n_restaurants, doc_by_vocab, restaurant_id_to_index, get_cosine_sim)
 
 	sim_list = [(restaurant_index_to_id[i], s) for i,s in enumerate(sim_list)]
 
 	sorted_sim_list = sorted(sim_list, key=lambda x: -x[1])
-	top_10 = dict(list(sorted_sim_list)[0:10]) # Top 10 for now because flat_reviews isn't filtered to have only restaurants
+	sorted_sim_list_inverse = {k:v for (k,v) in sorted_sim_list}
+
+	top_by_cat = basicSearch(name,city) # Asks for top 10 by categories, then filters it down to top 5 by weighing with cosine sim
+
+	#Adjust top results returned by basic search to account for cosine sim
+	for (id, score) in top_by_cat.items():
+		top_by_cat[id] = score*sorted_sim_list_inverse[id]
+	
+	print(top_by_cat)
+	new_sort_top = sorted(top_by_cat.items(), key=lambda x: -x[1])
+		
+	top_10 = dict(list(new_sort_top)[0:5])
+
 	data = return_results(top_10)
-	print(data)
+	print(data) 
+	return data
 
 
 """
@@ -136,7 +158,7 @@ def return_results(top):
 
 
 """
-Returns top 5 restaurants in the query city ranked by the number of categories matching 
+Returns top 10 restaurants in the query city ranked by the number of categories matching 
 the categories of the query restaurant
 """
 def basicSearch(name, city): 
@@ -153,7 +175,5 @@ def basicSearch(name, city):
 		target_city_restaurants_scores[id] = len(set(categories).intersection(query_categories))
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1], reverse=True)
-	top_5 = dict(list(target_city_restaurants_scores)[0:5]) 
-	
-	data = return_results(top_5)
-	return data
+	top_10 = dict(list(target_city_restaurants_scores)[0:10]) 
+	return top_10
