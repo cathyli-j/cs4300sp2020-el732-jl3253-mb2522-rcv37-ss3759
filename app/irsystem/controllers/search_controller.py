@@ -157,7 +157,7 @@ def return_results(top):
 	i = 0
 	for (id, score) in top.items():
 		if id in name_by_id: 
-			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':score, 'img':get_preview.get_img_src(id)}
+			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':score}
 	return data
 
 
@@ -183,3 +183,10 @@ def basicSearch(name, city):
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1], reverse=True)
 	top_10 = dict(list(target_city_restaurants_scores)[0:10]) 
 	return top_10
+
+
+
+@irsystem.route('/get_img', methods=['GET'])
+def get_img_src():
+	bid = request.args.get('bid')
+	return get_preview.get_img_src(bid)
