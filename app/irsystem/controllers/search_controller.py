@@ -4,6 +4,7 @@ from app.irsystem.models.helpers import *
 from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
 import traceback
+import numpy as np
 
 
 project_name = "Tastes Like Home"
@@ -96,6 +97,14 @@ Returns: TfidfVectorizer
 def create_vectorizer(max_features, stop_words, max_df=0.8, min_df=10, norm='l2'):
 	return TfidfVectorizer(min_df=min_df,max_df=max_df,max_features=max_features,stop_words=stop_words,norm=norm)
 
+def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc_mat, index_to_vocab, n):
+	final_product = np.ones((1,np.shape(input_doc_mat)[1]))
+	for id in restaurant_pair:
+		final_product = final_product * input_doc_mat[restaurant_id_to_index[id]]
+	sortidx = np.flip(np.argsort(final_product))
+	top_n_idx = sortidx[0,0:n].tolist()
+	return [index_to_vocab[i] for i in top_n_idx]
+
 # FULL_SEARCH ###############################################################################################  FULL_SEARCH ############################################################################
 
 """
@@ -114,31 +123,31 @@ def fullSearch(name, city, n, ahw):
 
 	if print_on: efun(type(flat_reviews)); print_first_element("flat_reviews",flat_reviews,"k")
 
-
-	#City needs to be hard-coded for now until we migrate to database/split the reviews another way 
 	query_restaurant_city = city_by_id[query_id].lower()
-	query_reviews = reviews_by_city[query_restaurant_city][query_id] #Freska Mediterranean Grill in Champaign
+	query_reviews = reviews_by_city[query_restaurant_city][query_id]
 
 	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now
 	#so we can't use examples that are from the same city
 	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
 	#the Similarity Matrix. This allows us to keep track of it during the comparisons
 
-	#query_reviews = flat_reviews[query_id]
-	#if query_id in flat_reviews: 
-	#	del flat_reviews[query_id]
+	query_reviews = flat_reviews[query_id]
+	if query_id in flat_reviews: 
+		del flat_reviews[query_id]
+
 
 	flat_reviews[query_id] = query_reviews
 	doc_by_vocab = tfidf_vec.fit_transform([flat_reviews[b_id] for b_id in flat_reviews]).toarray()
+	index_to_vocab = {i:v for i, v in enumerate(tfidf_vec.get_feature_names())}
 
 	if print_on: efun((doc_by_vocab.shape,len(doc_by_vocab))); print_first_element("dbvocab",doc_by_vocab,"k")
 
 	#restaurant_id_to_index = TEST_generate_restaurant_id_to_index() #Use this as opposed to the next line until we have reviews split by city
-	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower())
+	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower(), query_id)
 
 	# Appends the query restaurant to the city
-	n_restaurants = len(restaurant_id_to_index)
-	restaurant_id_to_index[query_id] = n_restaurants
+	n_restaurants = len(restaurant_id_to_index) + 1
+	restaurant_id_to_index[query_id] = n_restaurants - 1
 	# Create the index->id dictionary for the inverse lookup
 	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()} 
 	
@@ -159,7 +168,7 @@ def fullSearch(name, city, n, ahw):
 	# in cosine sim
 	avg = 0
 	for (id, data) in top_by_cat.items():
-		efun(('id data',id,data))
+		if print_on: efun(('id data',id,data))
 		if print_on: efun(('data[score]',data['score'])); efun(('simlist_inverse[id][score]',sorted_sim_list_inverse[id]['score'])); efun(('product',data['score']*sorted_sim_list_inverse[id]['score']))
 		product = data['score']*sorted_sim_list_inverse[id]['score']
 		top_by_cat[id]['score'] = product
@@ -184,6 +193,10 @@ def fullSearch(name, city, n, ahw):
 
 	# sort top n results by score and return them
 	top_n = dict(sorted(top_by_cat.items(), key=lambda x: -x[1]['score'])[:n])
+
+	for (id, _ ) in top_n.items():
+		top_n[id]['similar_reviews'] = most_similar_review_terms([id, query_id], restaurant_id_to_index, doc_by_vocab, index_to_vocab, 3)
+
 	return top_n
 
 # END FULL_SEARCH ############################################################################################ END FULL_SEARCH ############################################################################
@@ -205,10 +218,11 @@ def TEST_generate_restaurant_id_to_index():
 """
 Assigns an index for each restaurant id in the target city to help access the data in the numpy arrays
 """
-def generate_restaurant_id_to_index(city):
+def generate_restaurant_id_to_index(city, query_id):
 	with open('app/static/all_splits/id_by_city.json') as json_file:
 		id_by_city = json.load(json_file)
 	data = id_by_city[city]
+	data = [id for id in data if id != query_id]
 	restaurant_id_to_index = {restaurant_id:index for index, restaurant_id in enumerate([d for d in data])}
 	return restaurant_id_to_index
 
@@ -236,8 +250,8 @@ def get_sim_list(n_restaurants, input_doc_mat, restaurant_id_to_index, input_get
 	arr = [dict() for x in range(n_restaurants)]
 	for i in range(0, n_restaurants-1): # Index n_restaurants-1 will always be the query restaurant
 		val = input_get_sim_method(0, i, input_doc_mat, restaurant_id_to_index)
-		arr[i] = {'score': val, 'similarities': []}
-	arr[n_restaurants-1] = {'score': -1, 'similarities': []}
+		arr[i] = {'score': val, 'similar_categories': [], 'similar_reviews': []}
+	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': []}
 	return arr 
 
 """
@@ -266,7 +280,7 @@ def return_results(top):
 	data = {}
 	for (id, info) in top.items():
 		if id in name_by_id: 
-			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similarities': info['similarities']}
+			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similar_categories': info['similar_categories'], 'similar_reviews': info['similar_reviews']}
 	return data
 
 # BASIC_SEARCH ################################################################################################ BASIC_SEARCH ############################################################################
@@ -291,9 +305,9 @@ def basicSearch(name, city, n):
 		target_city_restaurants[id] = cat_by_id[id]
 	
 	for (id, categories) in target_city_restaurants.items():
-		if not print_on: efun(('most possible categories',len(set(categories).union(query_categories))))
+		#if not print_on: efun(('most possible categories',len(set(categories).union(query_categories))))
 		common_categories = set((categories)).intersection(query_categories)
-		target_city_restaurants_scores[id] = {'score': len(common_categories), 'similarities': common_categories}
+		target_city_restaurants_scores[id] = {'score': len(common_categories), 'similar_categories': common_categories, 'similar_reviews': []}
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1]['score'], reverse=True)
 	top_n = dict(list(target_city_restaurants_scores)[0:n]) 
