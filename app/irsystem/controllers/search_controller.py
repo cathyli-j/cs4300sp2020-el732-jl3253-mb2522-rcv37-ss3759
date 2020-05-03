@@ -260,7 +260,6 @@ Return format:
 def return_results(top):
 	#top = dict(list(top)[0:5]) #Truncate to only 5 results
 	data = {}
-	i = 0
 	for (id, info) in top.items():
 		if id in name_by_id: 
 			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similarities': info['similarities']}
