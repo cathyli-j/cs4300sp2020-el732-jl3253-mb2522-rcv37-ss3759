@@ -15,12 +15,12 @@ with open('app/static/all_splits/cat_by_id.json') as json_file:
 		cat_by_id = json.load(json_file)
 with open('app/static/all_splits/id_by_city.json') as json_file:
 		id_by_city = json.load(json_file)
+with open('app/static/all_splits/city_by_id.json') as json_file:
+		city_by_id = json.load(json_file)
 with open('app/static/all_splits/name_by_id.json') as json_file:
 		name_by_id = json.load(json_file)
 with open('app/static/all_splits/city_reviews_full.json') as json_file:
 		reviews_by_city = json.load(json_file)
-with open('app/static/all_splits/flat_reviews_full.json') as json_file:
-		reviews_by_id = json.load(json_file)
 with open('app/static/all_splits/address_by_id.json') as json_file:
 	address_by_id = json.load(json_file)
 
@@ -77,7 +77,8 @@ def fullSearch(name, city, n):
 	flat_reviews = reviews_by_city[city]
 
 	#City needs to be hard-coded for now until we migrate to database/split the reviews another way 
-	query_reviews = reviews_by_id[query_id] #Freska Mediterranean Grill in Champaign
+	query_restaurant_city = city_by_id[query_id].lower()
+	query_reviews = reviews_by_city[query_restaurant_city][query_id] #Freska Mediterranean Grill in Champaign
 
 	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now so we can't use examples that are from the same city
 	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in the Similarity Matrix

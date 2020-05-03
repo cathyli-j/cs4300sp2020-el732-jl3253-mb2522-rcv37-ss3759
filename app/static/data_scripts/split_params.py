@@ -5,6 +5,7 @@ file_name = "all_restaurants.json"
 with open(file_name) as json_file:
     data = json.load(json_file)
     id_by_city = {}
+    city_by_id = {}
     id_by_name = {}
     address_by_id = {}
     category_by_id = {}
@@ -25,6 +26,9 @@ with open(file_name) as json_file:
                 id_by_city[d['city'].lower()].append(d['business_id'])
             else:
                 id_by_city[d['city'].lower()] = [d['business_id']]
+            
+            if not (d['business_id'] in city_by_id):
+                city_by_id[d['business_id']] = d['city']
 
             city_state = d['city'] + ', ' + d['state']
             if not (city_state in cities_list):
@@ -43,12 +47,14 @@ with open(file_name) as json_file:
             good += 1
             print(good)
         except:
-            #print("err with %s" % d)
+            print("err with %s" % d)
             errs += 1
     with open('all_splits/id_by_name.json', 'w') as outfile:
         json.dump(id_by_name, outfile)
     with open('all_splits/id_by_city.json', 'w') as outfile:
         json.dump(id_by_city, outfile)
+    with open('all_splits/city_by_id.json', 'w') as outfile:
+        json.dump(city_by_id, outfile)
     with open('all_splits/cat_by_id.json', 'w') as outfile:
         json.dump(category_by_id, outfile)
     with open('all_splits/name_by_id.json', 'w') as outfile:
