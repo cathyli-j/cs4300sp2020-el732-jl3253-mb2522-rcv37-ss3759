@@ -49,9 +49,13 @@ def print_first_element(s,d,e):
 def search():
 	query_name = request.args.get('search_restaurant')
 	query_city = request.args.get('search_city')
+	ad_hoc_wordstring = request.args.get('search_keywords')
+	ad_hoc_words = []
 
-	# have to figure out a way to get these from user input to list format
-	ad_hoc_words = ['service', 'good service','delicious','food']
+	# if there is user keyword input
+	if ad_hoc_wordstring: 
+		wordlist = ad_hoc_wordstring.split(',')
+		ad_hoc_words = [w.strip() for w in wordlist]
 
 	try:
 		if not query_name or not query_city:
