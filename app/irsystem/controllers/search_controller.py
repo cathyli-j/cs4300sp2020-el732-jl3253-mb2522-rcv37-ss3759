@@ -17,10 +17,10 @@ with open('app/static/all_splits/id_by_city.json') as json_file:
 		id_by_city = json.load(json_file)
 with open('app/static/all_splits/name_by_id.json') as json_file:
 		name_by_id = json.load(json_file)
-with open('app/static/all_splits/flat_reviews.json') as json_file:
-		flat_reviews = json.load(json_file)
-with open('app/static/all_splits/city_reviews_4.json') as json_file:
-		city_reviews = json.load(json_file)
+with open('app/static/all_splits/city_reviews_full.json') as json_file:
+		reviews_by_city = json.load(json_file)
+with open('app/static/all_splits/flat_reviews_full.json') as json_file:
+		reviews_by_id = json.load(json_file)
 with open('app/static/all_splits/address_by_id.json') as json_file:
 	address_by_id = json.load(json_file)
 
@@ -35,7 +35,7 @@ def search():
 			output_message = ''
 		else:
 			output_message = "Restaurants most similar to " + query_name + " in " + query_city
-			city_without_state = query_city.split(', ')[0]
+			city_without_state = query_city.split(', ')[0].lower()
 			#rawdata = basicSearch(query_name, city_without_state, 5) #Need to transform the data to the output format with return_results()
 			rawdata = fullSearch(query_name, city_without_state, 5) #TODO: until this is ready, leaving it as a background task, use print() while the local app is running to see its output in the console
 			data = return_results(rawdata)
@@ -74,10 +74,10 @@ def fullSearch(name, city, n):
 	# flat_reviews will contain the flattened reviews for all restaurants in a city
 	##### Need to append query restaurant's reviews to the end of city reviews when the reviews data is done
 
-	flat_reviews = city_reviews[city.lower()]
+	flat_reviews = reviews_by_city[city]
 
 	#City needs to be hard-coded for now until we migrate to database/split the reviews another way 
-	query_reviews = city_reviews['middleton'][query_id] #Freska Mediterranean Grill in Champaign
+	query_reviews = reviews_by_id[query_id] #Freska Mediterranean Grill in Champaign
 
 	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now so we can't use examples that are from the same city
 	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in the Similarity Matrix
