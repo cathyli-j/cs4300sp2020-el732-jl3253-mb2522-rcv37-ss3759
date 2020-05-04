@@ -112,7 +112,9 @@ def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc
 	final_product = np.ones((1,np.shape(input_doc_mat)[1]))
 	for id in restaurant_pair:
 		final_product = final_product * input_doc_mat[restaurant_id_to_index[id]]
+	num_shared_terms = np.count_nonzero(final_product)
 	sortidx = np.flip(np.argsort(final_product))
+	n = min(num_shared_terms, n)
 	top_n_idx = sortidx[0,0:n].tolist()
 	return [index_to_vocab[i] for i in top_n_idx]
 
@@ -161,7 +163,7 @@ def fullSearch(name, city, n, ahw):
 	# Create the index->id dictionary for the inverse lookup
 	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()} 
 	
-	sim_list = get_sim_list(n_restaurants, doc_by_vocab, restaurant_id_to_index, get_cosine_sim)
+	sim_list = get_sim_list(n_restaurants, doc_by_vocab, restaurant_index_to_id, get_cosine_sim)
 	#Add restaurant IDs to their sim list
 	sim_list = [(restaurant_index_to_id[i], data) for i,data in enumerate(sim_list)] 
 
@@ -174,8 +176,6 @@ def fullSearch(name, city, n, ahw):
 	top_by_cat = basicSearch(name,city,initial_num)
 
 	#Adjust the scores of top results returned by basic search to account for cosine sim
-	#The "similarities" field in the data is just the common categories for now. I have not implemented a way to find similar words
-	# in cosine sim
 	avg = 0
 	for (id, data) in top_by_cat.items():
 		if print_on: efun(('id data',id,data))
@@ -240,10 +240,10 @@ def generate_restaurant_id_to_index(city, query_id):
 """
 Generates the cosine similarity between the reviews of two restaurants
 """
-def get_cosine_sim(idx1, idx2, input_doc_mat, restaurant_id_to_index):
+def get_cosine_sim(idx1, idx2, input_doc_mat):
 	vec1 = input_doc_mat[idx1]
 	vec2 = input_doc_mat[idx2]
-	return vec1.dot(vec2)/(np.linalg.norm(vec1) * np.linalg.norm(vec2)) 
+	return vec1.dot(vec2)/(np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
 
 """
@@ -256,12 +256,13 @@ Similarities represents which words were the most similar between the restaurant
 It is just an empty list for now because this has not been implemented. 
 
 """
-def get_sim_list(n_restaurants, input_doc_mat, restaurant_id_to_index, input_get_sim_method): 
+def get_sim_list(n_restaurants, input_doc_mat, restaurant_index_to_id, input_get_sim_method): 
 	arr = [dict() for x in range(n_restaurants)]
 	for i in range(0, n_restaurants-1): # Index n_restaurants-1 will always be the query restaurant
-		val = input_get_sim_method(0, i, input_doc_mat, restaurant_id_to_index)
+		val = input_get_sim_method(i, n_restaurants-1, input_doc_mat)
 		arr[i] = {'score': val, 'similar_categories': [], 'similar_reviews': []}
 	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': []}
+	efun(arr)
 	return arr 
 
 """
@@ -317,7 +318,11 @@ def basicSearch(name, city, n):
 	for (id, categories) in target_city_restaurants.items():
 		#if not print_on: efun(('most possible categories',len(set(categories).union(query_categories))))
 		common_categories = set((categories)).intersection(query_categories)
-		target_city_restaurants_scores[id] = {'score': len(common_categories), 'similar_categories': common_categories, 'similar_reviews': []}
+		union = len(set(categories).union(query_categories))
+		discard = ['restaurants', 'food', 'event planning & services', 'caterers']
+		for cat in discard:
+			common_categories.discard(cat)
+		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': common_categories, 'similar_reviews': []}
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1]['score'], reverse=True)
 	top_n = dict(list(target_city_restaurants_scores)[0:n]) 
