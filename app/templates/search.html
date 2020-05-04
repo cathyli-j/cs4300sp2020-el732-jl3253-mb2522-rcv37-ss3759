@@ -30,18 +30,19 @@
                 background-attachment: fixed;
                 background-size: cover;
             }
-     
+
         </style>
 
     </head>
     <body>
+      <main>
         <form class="form-inline global-search" style="width: 100%">
             <div class="header">
                 <h1 style="font-size: 60px; font-family:Verdana; font-weight:bold; color: white">
-                    Tastes Like Home 
+                    Tastes Like Home
                 </h1>
             </div>
-            
+
             <br><br>
             <div class="form-row" style="height: 12%">
                 <div class="form-group col-md-4">
@@ -52,7 +53,7 @@
                 </div>
                 <div class="form-group col-md-4">
                     <input id="keywords" type="text" name="search_keywords" class="form-control typeahead" placeholder="Keywords (separate by comma)" value="{{query[2]}}">
-                </div>                
+                </div>
             </div>
 
             <br><br>
@@ -75,7 +76,7 @@
             $('#restaurant').typeahead(
                 {
                     highlight: true
-                }, 
+                },
                 {
                     name: 'restaurant-names',
                     source: restaurantNames
@@ -93,7 +94,7 @@
             $('#city').typeahead(
                 {
                     highlight: true
-                }, 
+                },
                 {
                     name: 'city-names',
                     source: cityNames
@@ -105,7 +106,7 @@
 
         {% if data %}
             <h1 style="text-align: center; color: white">{{output_message}}</h1>
-            {% for d in data %}  
+            {% for d in data %}
             <a href="https://www.yelp.com/biz/{{d}}" style="text-decoration: none;color: inherit;">
                 <div class="preview">
                     <div style="min-height: 110px;">
@@ -115,8 +116,8 @@
                         <span style="color: #b0b0b0;">{{data[d]['address']}}</span>
                         <span>{{data[d]['rating']}}</span>
                     </div>
-                    
-                    
+
+
 
                     <span style="font-style: italic;">Score: {{data[d]['score']}}</span>
                     <span style="font-style: italic;">Similar Categories: {{data[d]['similar_categories']}}</span>
@@ -126,16 +127,16 @@
 
                 </div>
             </a>
-                
+
             {% endfor %}
         {% endif %}
 
         </form>
-        <form class="footer"> 
-            <div>
-                <p>{{ name }} | {{ netid }}</p>
-            </div>
-        </form>
+      </main>
+      <footer class="footer">
+        <div>{{ name }} | Discover your new favorite restaurant in a new city! </div>
+        <div> Authors | {{ netid }} </div>
+      </footer>
     </body>
 
     <script>
