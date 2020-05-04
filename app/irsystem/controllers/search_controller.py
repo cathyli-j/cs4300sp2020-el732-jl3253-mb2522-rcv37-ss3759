@@ -25,6 +25,8 @@ with open('app/static/all_splits/city_reviews_full.json') as json_file:
 with open('app/static/all_splits/address_by_id.json') as json_file:
 	address_by_id = json.load(json_file)
 
+bad_ids = ['ZirBQMRrUeLd_wX_LaEHOw','wKgbqx6FsFiDQyoICGfawg','DOpO2-k_VrVK9AsbmivQfw','hc78bF7jF1BY42F5yQjDDQ','nrJHoyHClxK4zJp99VOshA', 'GcOSwe8tNvWfRH-gp2UQYQ','OeC8N92aFVoCUQ6SolY2zg','ZirBQMRrUeLd_wX_LaEHOw','GcOSwe8tNvWfRH-gp2UQYQ','ZirBQMRrUeLd_wX_LaEHOw','wKgbqx6FsFiDQyoICGfawg','DOpO2-k_VrVK9AsbmivQfw','hc78bF7jF1BY42F5yQjDDQ','nrJHoyHClxK4zJp99VOshA']
+
 # PRINTING ###################################################################################################### PRINTING ############################################################################
 
 # master print signal
@@ -133,7 +135,9 @@ def fullSearch(name, city, n, ahw):
 	
 	# flatten the reviews of city ***city***
 	flat_reviews = reviews_by_city[city]
-
+	for id in bad_ids: 
+		if id in flat_reviews:
+			del flat_reviews[id]
 	if print_on: efun(type(flat_reviews)); print_first_element("flat_reviews",flat_reviews,"k")
 
 	query_restaurant_city = city_by_id[query_id].lower()
@@ -147,27 +151,23 @@ def fullSearch(name, city, n, ahw):
 	if query_id in flat_reviews: 
 		del flat_reviews[query_id]
 
-
 	flat_reviews[query_id] = query_reviews
 	doc_by_vocab = tfidf_vec.fit_transform([flat_reviews[b_id] for b_id in flat_reviews]).toarray()
 	index_to_vocab = {i:v for i, v in enumerate(tfidf_vec.get_feature_names())}
 
 	if print_on: efun((doc_by_vocab.shape,len(doc_by_vocab))); print_first_element("dbvocab",doc_by_vocab,"k")
 
-	#restaurant_id_to_index = TEST_generate_restaurant_id_to_index() #Use this as opposed to the next line until we have reviews split by city
-	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower(), query_id)
-
 	# Appends the query restaurant to the city
-	n_restaurants = len(restaurant_id_to_index) + 1
-	restaurant_id_to_index[query_id] = n_restaurants - 1
+	n_restaurants = len(flat_reviews.items())
+	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower(), query_id, n_restaurants)
 	# Create the index->id dictionary for the inverse lookup
-	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()} 
+	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()}
 	
 	sim_list = get_sim_list(n_restaurants, doc_by_vocab, restaurant_index_to_id, get_cosine_sim)
 	#Add restaurant IDs to their sim list
 	sim_list = [(restaurant_index_to_id[i], data) for i,data in enumerate(sim_list)] 
 
-	sorted_sim_list = sorted(sim_list, key=lambda x: -x[1]['score']) 
+	sorted_sim_list = sorted(sim_list, key=lambda x: x[1]['score'], reverse=True) 
 	sorted_sim_list_inverse = {k:v for (k,v) in sorted_sim_list}
 
 	# number of top restaurants to extract with Jaccard similarity
@@ -189,9 +189,12 @@ def fullSearch(name, city, n, ahw):
 	if ahw:
 		for (id,data) in top_by_cat.items():
 			keywords_in_reviews = 0
+			common_keywords = []
 			review = flat_reviews[id]
 			for word in ahw:
-				if word in review: keywords_in_reviews += 1
+				if word in review: 
+					keywords_in_reviews += 1
+					common_keywords.append(word)
 
 			# if any of the input keywords are mentioned in the restaurant's reviews
 			if keywords_in_reviews:
@@ -200,9 +203,10 @@ def fullSearch(name, city, n, ahw):
 				L = avg/((abs(top_by_cat[id]['score'] - avg)) + 0.75)
 				R =  keywords_in_reviews ** (1/((keywords_in_reviews + 1) ** 0.5))
 				top_by_cat[id]['score'] += L*R
+				top_by_cat[id]['keywords'] = common_keywords
 
 	# sort top n results by score and return them
-	top_n = dict(sorted(top_by_cat.items(), key=lambda x: -x[1]['score'])[:n])
+	top_n = dict(sorted(top_by_cat.items(), key=lambda x: x[1]['score'], reverse=True)[:n])
 
 	for (id, _ ) in top_n.items():
 		top_n[id]['similar_reviews'] = most_similar_review_terms([id, query_id], restaurant_id_to_index, doc_by_vocab, index_to_vocab, 3)
@@ -228,12 +232,13 @@ def TEST_generate_restaurant_id_to_index():
 """
 Assigns an index for each restaurant id in the target city to help access the data in the numpy arrays
 """
-def generate_restaurant_id_to_index(city, query_id):
+def generate_restaurant_id_to_index(city, query_id, n_restaurants):
 	with open('app/static/all_splits/id_by_city.json') as json_file:
 		id_by_city = json.load(json_file)
 	data = id_by_city[city]
 	data = [id for id in data if id != query_id]
 	restaurant_id_to_index = {restaurant_id:index for index, restaurant_id in enumerate([d for d in data])}
+	restaurant_id_to_index[query_id] = n_restaurants-1
 	return restaurant_id_to_index
 
 
@@ -261,8 +266,7 @@ def get_sim_list(n_restaurants, input_doc_mat, restaurant_index_to_id, input_get
 	for i in range(0, n_restaurants-1): # Index n_restaurants-1 will always be the query restaurant
 		val = input_get_sim_method(i, n_restaurants-1, input_doc_mat)
 		arr[i] = {'score': val, 'similar_categories': [], 'similar_reviews': []}
-	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': []}
-	efun(arr)
+	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': [], 'keywords': []}
 	return arr 
 
 """
@@ -291,7 +295,7 @@ def return_results(top):
 	data = {}
 	for (id, info) in top.items():
 		if id in name_by_id: 
-			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similar_categories': info['similar_categories'], 'similar_reviews': info['similar_reviews']}
+			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similar_categories': info['similar_categories'], 'similar_reviews': info['similar_reviews'], 'keywords': info['keywords']}
 	return data
 
 # BASIC_SEARCH ################################################################################################ BASIC_SEARCH ############################################################################
@@ -322,7 +326,7 @@ def basicSearch(name, city, n):
 		discard = ['restaurants', 'food', 'event planning & services', 'caterers']
 		for cat in discard:
 			common_categories.discard(cat)
-		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': common_categories, 'similar_reviews': []}
+		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': common_categories, 'similar_reviews': [], 'keywords': []}
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1]['score'], reverse=True)
 	top_n = dict(list(target_city_restaurants_scores)[0:n]) 
