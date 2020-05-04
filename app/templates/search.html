@@ -24,6 +24,12 @@
                 padding: 30px;
             }
 
+            body {
+                background: linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url('static/assorted-salads-on-bowls-1640773.jpg');
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                background-size: cover;
+            }
      
         </style>
 
@@ -31,7 +37,7 @@
     <body>
         <form class="form-inline global-search" style="width: 100%">
             <div class="header">
-                <h1 style="font-size: 55px; font-family:Futura; color: black">
+                <h1 style="font-size: 60px; font-family:Verdana; font-weight:bold; color: white">
                     Tastes Like Home 
                 </h1>
             </div>
@@ -98,7 +104,7 @@
         <form class="">
 
         {% if data %}
-            <h1 style="text-align: center;">{{output_message}}</h1>
+            <h1 style="text-align: center; color: white">{{output_message}}</h1>
             {% for d in data %}  
             <a href="https://www.yelp.com/biz/{{d}}" style="text-decoration: none;color: inherit;">
                 <div class="preview">
