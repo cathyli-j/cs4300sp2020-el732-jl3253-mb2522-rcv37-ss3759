@@ -59,9 +59,16 @@ def search():
 		ad_hoc_words = [w.strip() for w in wordlist]
 
 	try:
-		if not query_name or not query_city:
-			data = [] # Since data is blank, search.html doesn't render any message/data
-			output_message = ''
+		if query_city and not query_name:
+			return render_template('fail.html', message="the name of your favorite restaurant.")
+		if query_name and not query_city:
+			return render_template('fail.html', message="a destination city.")
+		if ad_hoc_wordstring and not query_name and not query_city:
+			return render_template('fail.html', message="the name of your favorite restaurant and a destination city.")
+		if not ad_hoc_wordstring and not query_name and not query_city:
+			data = []
+			query = ["","",""]
+			output_message = ""
 		else:
 			output_message = "Restaurants most similar to " + query_name + " in " + query_city
 			city_without_state = query_city.split(', ')[0].lower()
@@ -71,12 +78,16 @@ def search():
 			rawdata = fullSearch(query_name, city_without_state, 5, ahw = ad_hoc_words) 
 			#Transform the data to the output format with return_results()
 			data = return_results(rawdata)
+			if not ad_hoc_wordstring:
+				ad_hoc_wordstring = ""
+			query = [query_name, query_city, ad_hoc_wordstring]
+			efun(query)
 	except Exception: 
 		print('an error occurred')
 		print(traceback.format_exc())
 		return render_template('fail.html')
 	else: 
-		return render_template('search.html', name=project_name, netid=net_id, output_message=output_message, data=data)
+		return render_template('search.html', query=query, name=project_name, netid=net_id, output_message=output_message, data=data)
 
 # END SEARCH ################################################################################################## END SEARCH ############################################################################
 

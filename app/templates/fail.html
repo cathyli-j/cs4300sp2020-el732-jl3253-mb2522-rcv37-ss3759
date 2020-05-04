@@ -1,9 +1,36 @@
 <html>
-<h1>
-    Sample Error Screen
-</h1>
+  <head>
+    <style>
+      .container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .button {
+        color: white;
+        font-family: Futura;
+        background-color: #5bc0de;
+        padding: 30px 32px;
+        font-size: 20px;
+        margin: 30px;
+      }
+      
+    </style>
+  </head>
 
-<form>
-    <input type="button" style="width:100px;height:60px;" value="Try Again!" onclick="history.back()">
-  </form>
+
+
+  <div class="container">
+        <h1 style="font-size:90px"> Oops! </h1> <br>
+  </div>
+  <div class="container">
+    {% if message %}
+        <h2 style="text-align: center; font-family:Futura;">In order to run this query, you need to input {{message}}</h2>
+    {% else %}
+        <h2 style="text-align: center; font-family:Futura;">There appears to have been an error. Please try another query or try again later.</h2>
+    {% endif %}
+  </div>
+  <div class="container">
+    <input type="button" class="button" value="Try Again!" onclick="history.back()">
+  </div>
 </html>
