@@ -11,6 +11,7 @@ text-align:center;
 body {
 padding-top: 15%;
 padding-bottom: 15px;
+height: 100%;
 }
 .global-search {
 text-align:center;
@@ -28,6 +29,10 @@ margin-bottom:0;
 position:absolute;
 top:2%;
 right:2%;
+}
+.footer{
+position:fixed;
+bottom:2%;
 }
 .btn{
 background-color: #4285F4;

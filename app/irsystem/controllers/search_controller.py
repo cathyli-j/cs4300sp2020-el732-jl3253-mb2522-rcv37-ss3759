@@ -8,7 +8,7 @@ import numpy as np
 
 
 project_name = "Tastes Like Home"
-net_id = "Emanuele Lusso: el732, Cathy Li: jl3253, Matias Blake: mb2522, Robert Villaluz: rcv37, Saaqeb Siddiqi: ss3759"
+net_id = "Emanuele Lusso, Cathy Li, Matias Blake, Robert Villaluz, Saaqeb Siddiqi"
 
 with open('app/static/all_splits/id_by_name.json') as json_file:
 		id_by_name = json.load(json_file)
