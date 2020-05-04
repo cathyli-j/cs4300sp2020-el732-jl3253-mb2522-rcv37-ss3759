@@ -142,7 +142,6 @@ def fullSearch(name, city, n, ahw):
 	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
 	#the Similarity Matrix. This allows us to keep track of it during the comparisons
 
-	query_reviews = flat_reviews[query_id]
 	if query_id in flat_reviews: 
 		del flat_reviews[query_id]
 
