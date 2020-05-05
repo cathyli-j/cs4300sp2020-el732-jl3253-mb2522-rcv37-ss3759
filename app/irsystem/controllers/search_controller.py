@@ -1,4 +1,4 @@
-from . import *  
+from . import *
 from app.irsystem.controllers import get_preview
 from app.irsystem.models.helpers import *
 from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
@@ -30,7 +30,7 @@ bad_keywords = ["charlotte","scottsdale","pittsburgh","reservation","cleveland",
 # PRINTING ###################################################################################################### PRINTING ############################################################################
 
 # master print signal
-print_on = False 
+print_on = False
 
 # for printing/viewing ease
 separator = '\n\n\n\n\n\n\n\nPRINT\n\n\n\n\n\n\n\n'
@@ -56,7 +56,7 @@ def search():
 	ad_hoc_words = []
 
 	# if there is user keyword input
-	if ad_hoc_wordstring: 
+	if ad_hoc_wordstring:
 		wordlist = ad_hoc_wordstring.split(',')
 		ad_hoc_words = [w.strip() for w in wordlist]
 
@@ -77,17 +77,17 @@ def search():
 			#rawdata = basicSearch(query_name, city_without_state, 5)
 			# TODO: until this is ready, leaving it as a background task, use print()
 			#while the local app is running to see its output in the console
-			rawdata = fullSearch(query_name, city_without_state, 5, ahw = ad_hoc_words) 
+			rawdata = fullSearch(query_name, city_without_state, 5, ahw = ad_hoc_words)
 			#Transform the data to the output format with return_results()
 			data = return_results(rawdata)
 			if not ad_hoc_wordstring:
 				ad_hoc_wordstring = ""
 			query = [query_name, query_city, ad_hoc_wordstring]
-	except Exception: 
+	except Exception:
 		print('an error occurred')
 		print(traceback.format_exc())
 		return render_template('fail.html')
-	else: 
+	else:
 		return render_template('search.html', query=query, name=project_name, netid=net_id, output_message=output_message, data=data)
 
 # END SEARCH ################################################################################################## END SEARCH ############################################################################
@@ -120,20 +120,20 @@ def fullSearch(name, city, n, ahw):
 	n_feats = 5000
 	query_id = id_by_name[name.lower()][0]
 	tfidf_vec = create_vectorizer(n_feats, "english")
-	
+
 	# flatten the reviews of city ***city***
 	flat_reviews = reviews_by_city[city]
-	for id in bad_ids: 
+	for id in bad_ids:
 		if id in flat_reviews:
 			del flat_reviews[id]
 
 	query_restaurant_city = city_by_id[query_id].lower()
 	query_reviews = reviews_by_city[query_restaurant_city][query_id]
 
-	#These next few lines handle if the query restaurant is in the target city. 
-	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
-	#the Similarity Matrix. This allows us to keep track of it during the comparisons 
-	if query_id in flat_reviews: 
+	#These next few lines handle if the query restaurant is in the target city.
+	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in
+	#the Similarity Matrix. This allows us to keep track of it during the comparisons
+	if query_id in flat_reviews:
 		del flat_reviews[query_id]
 
 	flat_reviews[query_id] = query_reviews
@@ -145,12 +145,12 @@ def fullSearch(name, city, n, ahw):
 	restaurant_id_to_index = generate_restaurant_id_to_index(city.lower(), query_id, n_restaurants)
 	# Create the index->id dictionary for the inverse lookup
 	restaurant_index_to_id = {v:k for k,v in restaurant_id_to_index.items()}
-	
+
 	sim_list = get_sim_list(n_restaurants, doc_by_vocab, restaurant_index_to_id, get_cosine_sim)
 	#Add restaurant IDs to their sim list
-	sim_list = [(restaurant_index_to_id[i], data) for i,data in enumerate(sim_list)] 
+	sim_list = [(restaurant_index_to_id[i], data) for i,data in enumerate(sim_list)]
 
-	sorted_sim_list = sorted(sim_list, key=lambda x: x[1]['score'], reverse=True) 
+	sorted_sim_list = sorted(sim_list, key=lambda x: x[1]['score'], reverse=True)
 	sorted_sim_list_inverse = {k:v for (k,v) in sorted_sim_list}
 
 	# number of top restaurants to extract with Jaccard similarity
@@ -164,7 +164,7 @@ def fullSearch(name, city, n, ahw):
 		product = data['score']*sorted_sim_list_inverse[id]['score']
 		top_by_cat[id]['score'] = product
 		avg += abs(product)
-	
+
 	avg /= initial_num
 
 	# tune similarity score if there are user keywords
@@ -174,7 +174,7 @@ def fullSearch(name, city, n, ahw):
 			common_keywords = []
 			review = flat_reviews[id]
 			for word in ahw:
-				if word in review: 
+				if word in review:
 					keywords_in_reviews += 1
 					common_keywords.append(word)
 
@@ -199,9 +199,9 @@ def fullSearch(name, city, n, ahw):
 
 
 """
-TEMPORARY FUNCTION 
+TEMPORARY FUNCTION
 
-Because we don't have the reviews split by city yet, we use this function to get the IDs in the 
+Because we don't have the reviews split by city yet, we use this function to get the IDs in the
 sample flat_reviews dataset (this sample dataset contains the first 3000 reviews, which are not necessarily
 from restaurants)
 """
@@ -239,20 +239,20 @@ Returns a similarity list generated using the method input_get_sim_method (Cosin
 Each element in the list has the following format:
 {{'score': int , 'similarities': [ ] }}
 
-Similarities represents which words were the most similar between the restaurants compared. 
-It is just an empty list for now because this has not been implemented. 
+Similarities represents which words were the most similar between the restaurants compared.
+It is just an empty list for now because this has not been implemented.
 
 """
-def get_sim_list(n_restaurants, input_doc_mat, restaurant_index_to_id, input_get_sim_method): 
+def get_sim_list(n_restaurants, input_doc_mat, restaurant_index_to_id, input_get_sim_method):
 	arr = [dict() for x in range(n_restaurants)]
 	for i in range(0, n_restaurants-1): # Index n_restaurants-1 will always be the query restaurant
 		val = input_get_sim_method(i, n_restaurants-1, input_doc_mat)
 		arr[i] = {'score': val, 'similar_categories': [], 'similar_reviews': []}
 	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': [], 'keywords': []}
-	return arr 
+	return arr
 
 """
-Returns the n most common terms found in the reviews of the restaurant pair. 
+Returns the n most common terms found in the reviews of the restaurant pair.
 """
 def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc_mat, index_to_vocab, n):
 	final_product = np.ones((1,np.shape(input_doc_mat)[1]))
@@ -261,29 +261,31 @@ def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc
 	num_shared_terms = np.count_nonzero(final_product)
 	sortidx = np.flip(np.argsort(final_product))
 	n = min(num_shared_terms, n)
+	after_blacklist_min = n
 	top_30_idx = sortidx[0,0:30].tolist()
-	for idx in top_30_idx:
+	for i,idx in enumerate(top_30_idx):
 		if index_to_vocab[idx] in bad_keywords:
 			top_30_idx.remove(idx)
+			if (i < n):
+				after_blacklist_min = after_blacklist_min - 1
 
-	return [index_to_vocab[i] for i in top_30_idx[0:n]]
-
+	return [index_to_vocab[i] for i in top_30_idx[0:after_blacklist_min]]
 """
-Returns the top results in the appropraite format. 
+Returns the top results in the appropraite format.
 
-Input format: 
+Input format:
 {
 	id: restaurant id
 	{
 		'score': final similarity score
 		'similarities': similar keywords, categories, etc
 
-	}      
+	}
 }
 
 Return format:
 {
-	'name': restaurant name, 
+	'name': restaurant name,
 	'address': restaurant address,
 	'score': final similarity score,
 	'metrics': similar keywords, categories, etc
@@ -293,31 +295,31 @@ def return_results(top):
 	#top = dict(list(top)[0:5]) #Truncate to only 5 results
 	data = {}
 	for (id, info) in top.items():
-		if id in name_by_id: 
+		if id in name_by_id:
 			data[id] = {'name': name_by_id[id][0], 'address':address_by_id[id], 'score':round(info['score'],2), 'similar_categories': info['similar_categories'], 'similar_reviews': info['similar_reviews'], 'keywords': info['keywords']}
 	return data
 
 # BASIC_SEARCH ################################################################################################ BASIC_SEARCH ############################################################################
 
 """
-Returns top n restaurants in the query city ranked by the number of categories matching 
+Returns top n restaurants in the query city ranked by the number of categories matching
 the categories of the query restaurant.
 
-Each result has the following format: 
+Each result has the following format:
 {id: {'score': int , 'similarities': [ ] }}
 
-Where score is the Jaccard similarity and categories is the list of categories that the restaurants have in common. 
+Where score is the Jaccard similarity and categories is the list of categories that the restaurants have in common.
 """
-def basicSearch(name, city, n): 
+def basicSearch(name, city, n):
 	query_id = id_by_name[name.lower()][0]
 	query_categories = cat_by_id[query_id]
 	target_city_ids = id_by_city[city.lower()]
 	target_city_restaurants = {}
-	target_city_restaurants_scores = {} 
+	target_city_restaurants_scores = {}
 
 	for id in target_city_ids:
 		target_city_restaurants[id] = cat_by_id[id]
-	
+
 	for (id, categories) in target_city_restaurants.items():
 		common_categories = set((categories)).intersection(query_categories)
 		union = len(set(categories).union(query_categories))
@@ -327,7 +329,7 @@ def basicSearch(name, city, n):
 		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': list(common_categories), 'similar_reviews': [], 'keywords': []}
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1]['score'], reverse=True)
-	top_n = dict(list(target_city_restaurants_scores)[0:n]) 
+	top_n = dict(list(target_city_restaurants_scores)[0:n])
 	return top_n
 
 # END BASIC_SEARCH ############################################################################################ END BASIC_SEARCH ############################################################################
