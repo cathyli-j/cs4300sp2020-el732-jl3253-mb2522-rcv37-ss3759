@@ -15,6 +15,10 @@
                 margin-right: 20px;
             }
 
+            .keyword{
+                font-weight: bold;
+            }
+
             .preview{
                 margin-left: 100px;
                 margin-right: 100px;
@@ -105,29 +109,38 @@
         <form class="">
 
         {% if data %}
-            <h1 style="text-align: center; color: white">{{output_message}}</h1>
-            {% for d in data %}
+            <h1 style="text-align: center;">{{output_message}}</h1>
+            {% for d in data %}  
             <a href="https://www.yelp.com/biz/{{d}}" style="text-decoration: none;color: inherit;">
-                <div class="preview">
+                <div class="preview" data-id="{{ d }}" data-keywords="{{data[d]['keywords']}}" data-score="{{data[d]['score']}}" data-cats="{{data[d]['similar_categories']}}" data-revs="{{data[d]['similar_reviews']}}">
                     <div style="min-height: 110px;">
-                        <img src="static/loading.gif" id="{{ d }}" alt="" align='left'>
-                        <span style="font-weight: bold;color:#4d4d4d;">{{ data[d]['name'].strip() }}</span>
-                        <br>
-                        <span style="color: #b0b0b0;">{{data[d]['address']}}</span>
-                        <span>{{data[d]['rating']}}</span>
+                        <img src="static/loading.gif" alt="" align='left'>
+                        <div>
+                            <span style="font-weight: bold;color:#4d4d4d;">{{ data[d]['name'].strip() }}</span>
+                            <br>
+                            <span style="color: #b0b0b0;">{{data[d]['address']}}</span>
+                            <br>
+                            <!-- <span>{{data[d]['rating']}}</span> -->
+                            <span id="score" style="font-style: italic;"></span>
+                            <br>
+                            <span id="cats" style="font-style: italic;"></span>
+                            <br>
+                            <span id="revs" style="font-style: italic;"></span> 
+                            <br>
+                            <span id="keywords" style="font-style: italic;"></span>
+                            
+                        </div>
+                        
+                        
                     </div>
+                    
+                    
 
-
-
-                    <span style="font-style: italic;">Score: {{data[d]['score']}}</span>
-                    <span style="font-style: italic;">Similar Categories: {{data[d]['similar_categories']}}</span>
-                    <span style="font-style: italic;">Words Often Shared in Reviews: {{data[d]['similar_reviews']}}</span>
-                    <span style="font-style: italic;">Keywords we found in reviews: {{data[d]['keywords']}}</span>
-
+                    
 
                 </div>
             </a>
-
+                
             {% endfor %}
         {% endif %}
 
@@ -148,11 +161,50 @@
     </body>
 
     <script>
-        document.querySelectorAll(".preview img").forEach(function(e){
-            let bid = e.id
+        document.querySelector(".preview").style.border = "2px dashed #00c800"
+        document.querySelectorAll(".preview").forEach(function(e){
+            let bid = e.getAttribute("data-id"),
+                score = e.getAttribute("data-score"),
+                cats = JSON.parse(e.getAttribute("data-cats").replace("{","[").replace(/'/g, "\"").replace("}","]")).join(", "),
+                revs = JSON.parse(e.getAttribute("data-revs").replace(/'/g, "\"")),
+                keywords = JSON.parse(e.getAttribute("data-keywords").replace(/'/g, "\""))
+
+            let img = e.querySelector("img"),
+                score_span = e.querySelector("#score"),
+                cats_span = e.querySelector("#cats"),
+                keywords_span = e.querySelector("#keywords"),
+                revs_span = e.querySelector("#revs")
+            
+
             fetch("get_img?bid=" + bid)
                 .then(response => response.text())
-                .then(data => e.setAttribute("src", data || "static/burger.png"))
+                .then(data => img.setAttribute("src", data || "static/burger.png"))
+
+            let review_keywords = new Set(revs.concat(keywords))
+
+            console.log(review_keywords)
+            console.log(revs)
+            console.log(keywords)
+
+            score_span.innerText = `Score: ${score}`
+            cats_span.innerText = `Categories in common: ${cats}`
+            revs_span.innerText = `Words Often Shared in Reviews: `
+
+            review_keywords.forEach(e=>{
+                let kws = document.createElement("span")
+                kws.innerHTML = e + "&nbsp"
+                if (keywords.includes(e)){
+                    kws.setAttribute("class", "keyword")
+                }
+
+                revs_span.appendChild(kws)
+
+
+            })
+            
+            
+            
+
         })
     </script>
 
