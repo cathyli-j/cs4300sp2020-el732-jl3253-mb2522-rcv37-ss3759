@@ -26,7 +26,7 @@ with open('app/static/all_splits/address_by_id.json') as json_file:
 	address_by_id = json.load(json_file)
 
 bad_ids = ['ZirBQMRrUeLd_wX_LaEHOw','wKgbqx6FsFiDQyoICGfawg','DOpO2-k_VrVK9AsbmivQfw','hc78bF7jF1BY42F5yQjDDQ','nrJHoyHClxK4zJp99VOshA', 'GcOSwe8tNvWfRH-gp2UQYQ','OeC8N92aFVoCUQ6SolY2zg','ZirBQMRrUeLd_wX_LaEHOw','GcOSwe8tNvWfRH-gp2UQYQ','ZirBQMRrUeLd_wX_LaEHOw','wKgbqx6FsFiDQyoICGfawg','DOpO2-k_VrVK9AsbmivQfw','hc78bF7jF1BY42F5yQjDDQ','nrJHoyHClxK4zJp99VOshA']
-
+bad_keywords = ["charlotte","scottsdale","pittsburgh","reservation","cleveland","madison","reservations","arizona","airport","starbucks","bloody","movie","mary","flight","truck","apps","square","apps","square","rings","wood","draft","wedding","produce","goods","joe"]
 # PRINTING ###################################################################################################### PRINTING ############################################################################
 
 # master print signal
@@ -109,15 +109,6 @@ Returns: TfidfVectorizer
 def create_vectorizer(max_features, stop_words, max_df=0.8, min_df=10, norm='l2'):
 	return TfidfVectorizer(min_df=min_df,max_df=max_df,max_features=max_features,stop_words=stop_words,norm=norm)
 
-def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc_mat, index_to_vocab, n):
-	final_product = np.ones((1,np.shape(input_doc_mat)[1]))
-	for id in restaurant_pair:
-		final_product = final_product * input_doc_mat[restaurant_id_to_index[id]]
-	num_shared_terms = np.count_nonzero(final_product)
-	sortidx = np.flip(np.argsort(final_product))
-	n = min(num_shared_terms, n)
-	top_n_idx = sortidx[0,0:n].tolist()
-	return [index_to_vocab[i] for i in top_n_idx]
 
 # FULL_SEARCH ###############################################################################################  FULL_SEARCH ############################################################################
 
@@ -129,8 +120,6 @@ def fullSearch(name, city, n, ahw):
 	n_feats = 5000
 	query_id = id_by_name[name.lower()][0]
 	tfidf_vec = create_vectorizer(n_feats, "english")
-	# flat_reviews will contain the flattened reviews for all restaurants in a city
-	##### Need to append query restaurant's reviews to the end of city reviews when the reviews data is done
 	
 	# flatten the reviews of city ***city***
 	flat_reviews = reviews_by_city[city]
@@ -140,11 +129,10 @@ def fullSearch(name, city, n, ahw):
 
 	query_restaurant_city = city_by_id[query_id].lower()
 	query_reviews = reviews_by_city[query_restaurant_city][query_id]
-	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now
-	#so we can't use examples that are from the same city
-	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
-	#the Similarity Matrix. This allows us to keep track of it during the comparisons
 
+	#These next few lines handle if the query restaurant is in the target city. 
+	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
+	#the Similarity Matrix. This allows us to keep track of it during the comparisons 
 	if query_id in flat_reviews: 
 		del flat_reviews[query_id]
 
@@ -262,6 +250,23 @@ def get_sim_list(n_restaurants, input_doc_mat, restaurant_index_to_id, input_get
 		arr[i] = {'score': val, 'similar_categories': [], 'similar_reviews': []}
 	arr[n_restaurants-1] = {'score': -1, 'similar_categories': [], 'similar_reviews': [], 'keywords': []}
 	return arr 
+
+"""
+Returns the n most common terms found in the reviews of the restaurant pair. 
+"""
+def most_similar_review_terms(restaurant_pair, restaurant_id_to_index, input_doc_mat, index_to_vocab, n):
+	final_product = np.ones((1,np.shape(input_doc_mat)[1]))
+	for id in restaurant_pair:
+		final_product = final_product * input_doc_mat[restaurant_id_to_index[id]]
+	num_shared_terms = np.count_nonzero(final_product)
+	sortidx = np.flip(np.argsort(final_product))
+	n = min(num_shared_terms, n)
+	top_30_idx = sortidx[0,0:30].tolist()
+	for idx in top_30_idx:
+		if index_to_vocab[idx] in bad_keywords:
+			top_30_idx.remove(idx)
+
+	return [index_to_vocab[i] for i in top_30_idx[0:n]]
 
 """
 Returns the top results in the appropraite format. 
