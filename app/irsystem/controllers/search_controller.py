@@ -33,8 +33,8 @@ bad_ids = ['ZirBQMRrUeLd_wX_LaEHOw','wKgbqx6FsFiDQyoICGfawg','DOpO2-k_VrVK9Asbmi
 print_on = False 
 
 # for printing/viewing ease
-ee = '\n\n\n\n\n\n\n\nPRINT\n\n\n\n\n\n\n\n'
-def efun(s): print(ee); print(s); print(ee)
+separator = '\n\n\n\n\n\n\n\nPRINT\n\n\n\n\n\n\n\n'
+def efun(s): print(separator); print(s); print(separator)
 
 # print first elt of dict, key if ***e*** is "k" or value if "v"
 def print_first_element(s,d,e):
@@ -83,7 +83,6 @@ def search():
 			if not ad_hoc_wordstring:
 				ad_hoc_wordstring = ""
 			query = [query_name, query_city, ad_hoc_wordstring]
-			efun(query)
 	except Exception: 
 		print('an error occurred')
 		print(traceback.format_exc())
@@ -138,11 +137,9 @@ def fullSearch(name, city, n, ahw):
 	for id in bad_ids: 
 		if id in flat_reviews:
 			del flat_reviews[id]
-	if print_on: efun(type(flat_reviews)); print_first_element("flat_reviews",flat_reviews,"k")
 
 	query_restaurant_city = city_by_id[query_id].lower()
 	query_reviews = reviews_by_city[query_restaurant_city][query_id]
-
 	#These next few lines handle if the query restaurant is in the target city. We can't support that case right now
 	#so we can't use examples that are from the same city
 	#Removing the query restaurant and appending it later is necessary so the restaurant is in the last index in 
@@ -154,8 +151,6 @@ def fullSearch(name, city, n, ahw):
 	flat_reviews[query_id] = query_reviews
 	doc_by_vocab = tfidf_vec.fit_transform([flat_reviews[b_id] for b_id in flat_reviews]).toarray()
 	index_to_vocab = {i:v for i, v in enumerate(tfidf_vec.get_feature_names())}
-
-	if print_on: efun((doc_by_vocab.shape,len(doc_by_vocab))); print_first_element("dbvocab",doc_by_vocab,"k")
 
 	# Appends the query restaurant to the city
 	n_restaurants = len(flat_reviews.items())
@@ -178,13 +173,12 @@ def fullSearch(name, city, n, ahw):
 	#Adjust the scores of top results returned by basic search to account for cosine sim
 	avg = 0
 	for (id, data) in top_by_cat.items():
-		if print_on: efun(('id data',id,data))
-		if print_on: efun(('data[score]',data['score'])); efun(('simlist_inverse[id][score]',sorted_sim_list_inverse[id]['score'])); efun(('product',data['score']*sorted_sim_list_inverse[id]['score']))
 		product = data['score']*sorted_sim_list_inverse[id]['score']
 		top_by_cat[id]['score'] = product
-		avg += product
+		avg += abs(product)
 	
 	avg /= initial_num
+
 	# tune similarity score if there are user keywords
 	if ahw:
 		for (id,data) in top_by_cat.items():
@@ -320,13 +314,12 @@ def basicSearch(name, city, n):
 		target_city_restaurants[id] = cat_by_id[id]
 	
 	for (id, categories) in target_city_restaurants.items():
-		#if not print_on: efun(('most possible categories',len(set(categories).union(query_categories))))
 		common_categories = set((categories)).intersection(query_categories)
 		union = len(set(categories).union(query_categories))
 		discard = ['restaurants', 'food', 'event planning & services', 'caterers']
 		for cat in discard:
 			common_categories.discard(cat)
-		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': common_categories, 'similar_reviews': [], 'keywords': []}
+		target_city_restaurants_scores[id] = {'score': len(common_categories)/union, 'similar_categories': list(common_categories), 'similar_reviews': [], 'keywords': []}
 
 	target_city_restaurants_scores = sorted(target_city_restaurants_scores.items(), key=lambda x:x[1]['score'], reverse=True)
 	top_n = dict(list(target_city_restaurants_scores)[0:n]) 
